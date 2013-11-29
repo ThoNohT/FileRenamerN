@@ -1,4 +1,0 @@
-FileRenamerN
-============
-
-A file renamer.

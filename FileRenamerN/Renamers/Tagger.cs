@@ -17,11 +17,11 @@
 ********************************************************************************/
 
 
-using FileRenamerN.Renamers.Base;
-using FileRenamerN.Renamers.Dto;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using FileRenamerN.Renamers.Base;
+using FileRenamerN.Renamers.Dto;
 
 namespace FileRenamerN.Renamers
 {
@@ -123,6 +123,7 @@ namespace FileRenamerN.Renamers
         public override string Process(string path, string fileName, string extension, Dictionary<string, object> parameterValues)
         {
             var regex = (string)parameterValues["Pattern"];
+            // Add 1 to all groups, because the first group is the entire match.
             var artistGroup = Convert.ToInt32(parameterValues["Artist"]);
             var yearGroup = Convert.ToInt32(parameterValues["Year"]);
             var albumGroup = Convert.ToInt32(parameterValues["Album"]);

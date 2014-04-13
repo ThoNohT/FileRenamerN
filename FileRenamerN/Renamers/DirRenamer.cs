@@ -17,13 +17,13 @@
 ********************************************************************************/
 
 
-using FileRenamerN.Renamers.Base;
-using FileRenamerN.Renamers.Dto;
-using FileRenamerN.Tools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using FileRenamerN.Common.Extensions;
+using FileRenamerN.Renamers.Base;
+using FileRenamerN.Renamers.Dto;
 
 namespace FileRenamerN.Renamers
 {

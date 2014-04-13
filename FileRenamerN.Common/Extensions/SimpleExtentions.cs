@@ -17,12 +17,12 @@
 ********************************************************************************/
 
 
-namespace FileRenamerN.Tools
+namespace FileRenamerN.Common.Extensions
 {
     /// <summary>
-    /// A class for simple extenders.
+    /// A class for simple extension methods.
     /// </summary>
-    internal static class SimpleExtenders
+    public static class SimpleExtentions
     {
         /// <summary>
         /// Checks whether the specified string represents an integer value.
@@ -33,6 +33,16 @@ namespace FileRenamerN.Tools
         {
             int dummy;
             return int.TryParse(value, out dummy);
+        }
+
+        /// <summary>
+        /// Converts the specified Boolean to an integer representing its ordinal value.
+        /// </summary>
+        /// <param name="value">The Boolean to get the ordinal value of.</param>
+        /// <returns>The ordinal value of the specified Boolean.</returns>
+        public static int Ord(this bool value)
+        {
+            return value ? 1 : 0;
         }
     }
 }

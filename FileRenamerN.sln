@@ -1,7 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Express 2012 for Windows Desktop
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30110.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileRenamerN", "FileRenamerN\FileRenamerN.csproj", "{AE6F2CC0-AF43-483A-A8DF-5C18B5BD4A01}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectoryLabel", "DirectoryLabel\DirectoryLabel.csproj", "{3F5A1685-C5D0-49EB-B504-A10EBA5E9A69}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileRenamerN.Common", "FileRenamerN.Common\FileRenamerN.Common.csproj", "{0C1FDDCC-A025-4996-A618-53217C2B8D71}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,6 +19,14 @@ Global
 		{AE6F2CC0-AF43-483A-A8DF-5C18B5BD4A01}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AE6F2CC0-AF43-483A-A8DF-5C18B5BD4A01}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AE6F2CC0-AF43-483A-A8DF-5C18B5BD4A01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F5A1685-C5D0-49EB-B504-A10EBA5E9A69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F5A1685-C5D0-49EB-B504-A10EBA5E9A69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F5A1685-C5D0-49EB-B504-A10EBA5E9A69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F5A1685-C5D0-49EB-B504-A10EBA5E9A69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C1FDDCC-A025-4996-A618-53217C2B8D71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C1FDDCC-A025-4996-A618-53217C2B8D71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C1FDDCC-A025-4996-A618-53217C2B8D71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C1FDDCC-A025-4996-A618-53217C2B8D71}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -17,10 +17,6 @@
 ********************************************************************************/
 
 
-using FileRenamerN.Renamers.Base;
-using FileRenamerN.Renamers.Dto;
-using FileRenamerN.Tools;
-using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -29,6 +25,11 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using DirectoryLabel;
+using FileRenamerN.Common.Extensions;
+using FileRenamerN.Renamers.Base;
+using FileRenamerN.Renamers.Dto;
+using Microsoft.VisualBasic;
 
 namespace FileRenamerN
 {
@@ -39,12 +40,31 @@ namespace FileRenamerN
     {
         #region Fields
 
-        private Dictionary<string, Control> UsedControls = new Dictionary<string, Control>();
-        private Dictionary<string, Dictionary<string, string>> settings = new Dictionary<string, Dictionary<string, string>>();
+        /// <summary>
+        /// A dictionary mapping the names of the controls that are used by the currently loaded plugin, to their
+        /// controls.
+        /// </summary>
+        private Dictionary<string, Control> usedControls = new Dictionary<string, Control>();
+        
+        /// <summary>
+        /// A dictionary storing all settings, grouped by category.
+        /// </summary>
+        private Dictionary<string, Dictionary<string, string>> settings
+            = new Dictionary<string, Dictionary<string, string>>();
 
-        private RenamerBase CurrentRenamer;
-        private List<string> AllFiles;
+        /// <summary>
+        /// The currently loaded plugin.
+        /// </summary>
+        private RenamerBase currentRenamer;
 
+        /// <summary>
+        /// The list of all files in the currently selected directory.
+        /// </summary>
+        private List<string> allFiles;
+        
+        /// <summary>
+        /// The list of available renamer plugins.
+        /// </summary>
         private List<RenamerBase> renamers = new List<RenamerBase>();
 
         #endregion Fields
@@ -57,11 +77,12 @@ namespace FileRenamerN
         public FileRenamerN()
         {
             InitializeComponent();
-
-            LoadRenamers();
             LoadGeneralSettings();
-
             LoadFiles();
+            LoadRenamers();
+
+            // Add an event listener to the DirectoryChanged event of the directory label.
+            this.dirLabel.DirectoryChanged += OnDirectoryChanged;
         }
 
         #endregion Constructors
@@ -81,8 +102,6 @@ namespace FileRenamerN
                 .Where(t => t.Namespace == "FileRenamerN.Renamers")
                 .OrderBy(t => t.Name)
                 .Where(t => !t.IsAbstract);
-
-            this.settings = Settings.ReadDictionary("settings.dat");
 
             foreach (var renamerType in renamers)
             {
@@ -105,17 +124,21 @@ namespace FileRenamerN
         /// </summary>
         private void LoadGeneralSettings()
         {
+            this.settings = Settings.ReadDictionary("settings.dat");
+
             if (!this.settings.ContainsKey("General"))
                 this.settings.Add("General", new Dictionary<string, string>());
             var generalSettings = this.settings["General"];
 
             // Load a default value about here...
-            currentDir.Text = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            var currentDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             if (!generalSettings.ContainsKey("Directory"))
-                generalSettings.Add("Directory", currentDir.Text);
+                generalSettings.Add("Directory", currentDir);
             else
-                currentDir.Text = generalSettings["Directory"];
+                currentDir = generalSettings["Directory"];
+            this.dirLabel.ChangeDirectory(currentDir);
 
+            txtFileFilter.Text =  ".*";
             if (!generalSettings.ContainsKey("FileFilter"))
                 generalSettings.Add("FileFilter", txtFileFilter.Text);
             else
@@ -129,7 +152,7 @@ namespace FileRenamerN
         {
             var generalSettings = this.settings["General"];
 
-            generalSettings["Directory"] = currentDir.Text;
+            generalSettings["Directory"] = this.dirLabel.CurrentPath;
             generalSettings["FileFilter"] = txtFileFilter.Text;
         }
 
@@ -138,10 +161,10 @@ namespace FileRenamerN
         /// </summary>
         private void SaveCurrentControlValues()
         {
-            foreach (var item in this.UsedControls)
+            foreach (var item in this.usedControls)
             {
                 string value = "";
-                switch (this.CurrentRenamer.GetParameter(item.Key).Type)
+                switch (this.currentRenamer.GetParameter(item.Key).Type)
                 {
                     case ParamType.Boolean:
                         value = ((CheckBox)item.Value).Checked.ToString();
@@ -153,7 +176,7 @@ namespace FileRenamerN
                         value = ((TextBox)item.Value).Text;
                         break;
                 }
-                this.settings[this.CurrentRenamer.Name][item.Key] = value;
+                this.settings[this.currentRenamer.Name][item.Key] = value;
             }
         }
 
@@ -179,18 +202,21 @@ namespace FileRenamerN
         {
             var dialog = new FolderBrowserDialog();
 
-            if (!string.IsNullOrWhiteSpace(currentDir.Text))
+            if (!string.IsNullOrWhiteSpace(this.dirLabel.CurrentPath))
             {
-                dialog.SelectedPath = currentDir.Text;
+                dialog.SelectedPath = this.dirLabel.CurrentPath;
             }
 
             var result = dialog.ShowDialog();
-            if (result == DialogResult.OK)
-            {
-                currentDir.Text = dialog.SelectedPath;
-            }
+            if (result == DialogResult.OK) this.dirLabel.ChangeDirectory(dialog.SelectedPath);
+        }
 
-            LoadFiles();
+        /// <summary>
+        /// Handles the event that the directory is changed from the directory label.
+        /// </summary>
+        private void OnDirectoryChanged(object sender, EventArgs e)
+        {
+            this.LoadFiles();
         }
 
         /// <summary>
@@ -198,8 +224,8 @@ namespace FileRenamerN
         /// </summary>
         private void LoadFiles()
         {
-            var files = Directory.GetFiles(currentDir.Text);
-            this.AllFiles = files.Select(f => new FileInfo(f).Name).ToList();
+            var files = Directory.GetFiles(this.dirLabel.CurrentPath);
+            this.allFiles = files.Select(f => new FileInfo(f).Name).ToList();
             this.FilterFiles();
         }
 
@@ -209,13 +235,13 @@ namespace FileRenamerN
         private void FilterFiles()
         {
             // Don't do this if there's nothing to filter.
-            if (this.AllFiles == null)
+            if (this.allFiles == null)
                 return;
 
             lstFiles.Items.Clear();
             var regex = string.Format(@"\A{0}\z", txtFileFilter.Text);
             var invalidRegex = false;
-            foreach (var file in this.AllFiles)
+            foreach (var file in this.allFiles)
             {
                 try
                 {
@@ -239,19 +265,16 @@ namespace FileRenamerN
         {
             var listbox = (ListBox)sender;
 
-            if (listbox.SelectedItems.Count != 1)
-                return;
+            if (listbox.SelectedItems.Count != 1) return;
 
-            var path = currentDir.Text;
+            var path = this.dirLabel.CurrentPath;
             var filename = listbox.SelectedItem.ToString();
 
-            if (!ValidateFile(path + filename))
-                return;
+            if (!ValidateFile(path + filename)) return;
 
             var newName = Interaction.InputBox("Please enter the desired new name for this file", "Rename", filename);
 
-            if (string.IsNullOrEmpty(newName))
-                return;
+            if (string.IsNullOrEmpty(newName)) return;
 
             FileInfo fi = new FileInfo(path + filename);
 
@@ -262,31 +285,16 @@ namespace FileRenamerN
         /// <summary>
         /// Validates whether a file is actually a file and renaming operations can be done on it.
         /// </summary>
-        /// <param name="filename"></param>
-        /// <returns></returns>
+        /// <param name="filename">The filename to validate.</param>
+        /// <returns>A boolean value indicating whether the file exists.</returns>
         private bool ValidateFile(string filename)
         {
-            var fi = new FileInfo(filename);
-            if (!fi.Exists)
-            {
-                MessageBox.Show(string.Format("The file '{0}' does not exist.", filename));
-                return false;
-            }
-
-            return true;
+            if (new FileInfo(filename).Exists) return true;
+        
+            MessageBox.Show(string.Format("The file '{0}' does not exist.", filename));
+            return false;
         }
-
-        /// <summary>
-        /// Make sure the current directory string ends with a backslash.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void currentDir_TextChanged(object sender, EventArgs e)
-        {
-            if (!currentDir.Text.EndsWith(@"\"))
-                currentDir.Text += @"\";
-        }
-
+        
         #endregion Files
 
         #region Renamers
@@ -302,13 +310,13 @@ namespace FileRenamerN
             this.SaveCurrentControlValues();
 
             // Then switch renamers.
-            var renamer = this.CurrentRenamer = (RenamerBase)lstRenamers.SelectedItem;
+            var renamer = this.currentRenamer = (RenamerBase)lstRenamers.SelectedItem;
             btnApply.Enabled = renamer != null;
 
             // Remove all current controls.
             argPan.SuspendLayout();
             argPan.SuspendDrawing();
-            UsedControls.Clear();
+            usedControls.Clear();
 
             argPan.Controls.Clear();
 
@@ -330,18 +338,18 @@ namespace FileRenamerN
                     case ParamType.Boolean:
                         var checkBox = new CheckBox();
                         var doCheck = false;
-                        if (!bool.TryParse(this.settings[CurrentRenamer.Name][param.Name], out doCheck))
+                        if (!bool.TryParse(this.settings[currentRenamer.Name][param.Name], out doCheck))
                             doCheck = bool.Parse(param.DefaultValue);
                         checkBox.Checked = doCheck;
 
-                        UsedControls.Add(param.Name, checkBox);
+                        usedControls.Add(param.Name, checkBox);
                         argPan.Controls.Add(label);
                         argPan.Controls.Add(checkBox);
                         break;
                     case ParamType.Integer:
                         var nUpDown = new NumericUpDown();
                         int intVal = 0;
-                        if (!int.TryParse(this.settings[CurrentRenamer.Name][param.Name], out intVal))
+                        if (!int.TryParse(this.settings[currentRenamer.Name][param.Name], out intVal))
                             intVal = int.Parse(param.DefaultValue);
                         nUpDown.Value = intVal;
                         intVal = int.Parse(param.IntMinValue);
@@ -349,16 +357,16 @@ namespace FileRenamerN
                         intVal = int.Parse(param.IntMaxValue);
                         nUpDown.Maximum = intVal;
 
-                        UsedControls.Add(param.Name, nUpDown);
+                        usedControls.Add(param.Name, nUpDown);
                         argPan.Controls.Add(label);
                         argPan.Controls.Add(nUpDown);
                         break;
                     case ParamType.String:
                         var textBox = new TextBox();
                         textBox.Width = 320;
-                        textBox.Text = this.settings[CurrentRenamer.Name][param.Name];
+                        textBox.Text = this.settings[currentRenamer.Name][param.Name];
 
-                        UsedControls.Add(param.Name, textBox);
+                        usedControls.Add(param.Name, textBox);
                         argPan.Controls.Add(label);
                         argPan.Controls.Add(textBox);
                         break;
@@ -368,7 +376,7 @@ namespace FileRenamerN
                         button.Click += (a, b) => ButtonClicked(param.Name);
                         label.Text = "Action:";
 
-                        UsedControls.Add(param.Name, button);
+                        usedControls.Add(param.Name, button);
                         argPan.Controls.Add(label);
                         argPan.Controls.Add(button);
                         break;
@@ -387,9 +395,9 @@ namespace FileRenamerN
             progress.Maximum = lstFiles.Items.Count + 1;
             progress.Value = 0;
 
-            var parameters = this.CurrentRenamer.Parameters
+            var parameters = this.currentRenamer.Parameters
                              .ToDictionary(paramDef => paramDef.Name, paramDef => GetVal(paramDef));
-            var path = currentDir.Text;
+            var path = this.dirLabel.CurrentPath;
             progress.Value++;
 
             // Process all files
@@ -407,7 +415,7 @@ namespace FileRenamerN
                     fileName = item;
                     extension = "";
                 }
-                this.CurrentRenamer.RunButton(name, path, fileName, extension, parameters);
+                this.currentRenamer.RunButton(name, path, fileName, extension, parameters);
             }
 
             progress.Value++;
@@ -421,14 +429,14 @@ namespace FileRenamerN
             progress.Maximum = lstFiles.Items.Count + 1;
             progress.Value = 0;
 
-            var parameters = this.CurrentRenamer.Parameters
+            var parameters = this.currentRenamer.Parameters
                              .ToDictionary(paramDef => paramDef.Name, paramDef => GetVal(paramDef));
-            var path = currentDir.Text;
+            var path = this.dirLabel.CurrentPath;
             progress.Value++;
 
             // Validate the settings
             string message;
-            if (!this.CurrentRenamer.Validate(path, parameters, out message))
+            if (!this.currentRenamer.Validate(path, parameters, out message))
             {
                 MessageBox.Show(message, "Unable to apply tool");
                 return;
@@ -450,11 +458,9 @@ namespace FileRenamerN
                     extension = "";
                 }
 
-                var result = this.CurrentRenamer.Process(path, fileName, extension, parameters);
+                var result = this.currentRenamer.Process(path, fileName, extension, parameters);
                 if (result != null)
                 {
-                    Console.WriteLine(string.Format("Renamed something to {0}", result));
-
                     FileInfo fi = new FileInfo(string.Format("{0}{1}{2}", path, fileName, extension));
                     fi.MoveTo(result);
                 }
@@ -469,11 +475,11 @@ namespace FileRenamerN
         /// <summary>
         /// Gets the value of the specified parameter
         /// </summary>
-        /// <param name="paramDef"></param>
-        /// <returns></returns>
+        /// <param name="paramDef">A <see cref="ParamDef"/> defining the parameter to get the value of.</param>
+        /// <returns>The retrieved value.</returns>
         private object GetVal(ParamDef paramDef)
         {
-            var obj = this.UsedControls[paramDef.Name];
+            var obj = this.usedControls[paramDef.Name];
             object val = null;
             switch (paramDef.Type)
             {
@@ -493,8 +499,6 @@ namespace FileRenamerN
         /// <summary>
         /// When the filter text has changed, re-apply the filter.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void txtFileFilter_TextChanged(object sender, EventArgs e)
         {
             this.FilterFiles();
@@ -503,8 +507,6 @@ namespace FileRenamerN
         /// <summary>
         /// Selecting a file shows the filename in a special text box so it can be copied from.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void lstFiles_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (lstFiles.SelectedItems.Count == 1)

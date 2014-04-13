@@ -1,4 +1,5 @@
-﻿namespace FileRenamerN
+﻿using DirectoryLabel;
+namespace FileRenamerN
 {
     partial class FileRenamerN
     {
@@ -29,7 +30,6 @@
         private void InitializeComponent()
         {
             this.status = new System.Windows.Forms.StatusStrip();
-            this.currentDir = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblBrowse = new System.Windows.Forms.ToolStripStatusLabel();
             this.progress = new System.Windows.Forms.ToolStripProgressBar();
             this.lstFiles = new System.Windows.Forms.ListBox();
@@ -39,13 +39,15 @@
             this.lblToolDescription = new System.Windows.Forms.Label();
             this.txtFileFilter = new System.Windows.Forms.TextBox();
             this.txtFilename = new System.Windows.Forms.TextBox();
+            // "." is the current directory, which should always exist, overwrite later to cause it to layout properly.
+            this.dirLabel = new DirectoryLabelStrip(".", 500);
             this.status.SuspendLayout();
             this.SuspendLayout();
             // 
             // status
             // 
             this.status.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.currentDir,
+            this.dirLabel, 
             this.lblBrowse,
             this.progress});
             this.status.Location = new System.Drawing.Point(0, 409);
@@ -53,12 +55,6 @@
             this.status.Size = new System.Drawing.Size(977, 22);
             this.status.TabIndex = 0;
             this.status.Text = "statusStrip1";
-            // 
-            // currentDir
-            // 
-            this.currentDir.Name = "currentDir";
-            this.currentDir.Size = new System.Drawing.Size(0, 17);
-            this.currentDir.TextChanged += new System.EventHandler(this.currentDir_TextChanged);
             // 
             // lblBrowse
             // 
@@ -171,13 +167,12 @@
             this.status.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         #endregion
 
         private System.Windows.Forms.StatusStrip status;
-        private System.Windows.Forms.ToolStripStatusLabel currentDir;
+        private DirectoryLabelStrip dirLabel;
         private System.Windows.Forms.ToolStripStatusLabel lblBrowse;
         private System.Windows.Forms.ListBox lstFiles;
         private System.Windows.Forms.ToolStripProgressBar progress;

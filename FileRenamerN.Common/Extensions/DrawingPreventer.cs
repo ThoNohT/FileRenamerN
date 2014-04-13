@@ -21,13 +21,13 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
-namespace FileRenamerN.Tools
+namespace FileRenamerN.Common.Extensions
 {
     /// <summary>
     /// A class that allows a control to temporarily suspend drawing,
     /// in order to speed up sequential addition or deletion of controls.
     /// </summary>
-    internal static class DrawingPreventer
+    public static class DrawingPreventer
     {
         [DllImport("user32.dll")]
         public static extern int SendMessage(IntPtr hWnd, Int32 wMsg, bool wParam, Int32 lParam);

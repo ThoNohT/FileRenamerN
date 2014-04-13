@@ -68,8 +68,6 @@
   <ItemGroup>
     <Compile Include="Renamers\Tagger.cs" />
     <Compile Include="Renamers\SingleRenamer.cs" />
-    <Compile Include="Tools\SimpleExtenders.cs" />
-    <Compile Include="Tools\DrawingPreventer.cs" />
     <Compile Include="FileRenamerN.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -121,6 +119,16 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DirectoryLabel\DirectoryLabel.csproj">
+      <Project>{3f5a1685-c5d0-49eb-b504-a10eba5e9a69}</Project>
+      <Name>DirectoryLabel</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\FileRenamerN.Common\FileRenamerN.Common.csproj">
+      <Project>{0c1fddcc-a025-4996-a618-53217c2b8d71}</Project>
+      <Name>FileRenamerN.Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -145,16 +145,12 @@ namespace DirectoryLabel
             var showSubdirectoryButton = new DirectoryInfo(this.CurrentPath).EnumerateDirectories().Any();
 
             // 19 is the subdirectories button size.
-            var extraControlsOverhead = showSubdirectoryButton ? 19 : 0;
+            var extraControlsOverhead = showSubdirectoryButton.Ord() * 19;
 
-            var size = 0;
+            // Calculate the total size of the label strip and the labels' individual sizes.
             var i = 0;
-            var sizes = new List<int>();
-            foreach (var part in this.pathParts)
-            {
-                sizes.Add(this.AddLabel(size, part, i++, this.maxWidth > 0));
-            }
-            size = sizes.Sum();
+            var sizes = pathParts.Select(part => this.AddLabel(0, part, i++, this.maxWidth > 0)).ToArray();
+            var size = sizes.Sum();
 
             // Now clear everything and make sure we try to stay withing MaxWidth.
             var partialSize = size;
@@ -164,11 +160,12 @@ namespace DirectoryLabel
 
                 int j = 0;
                 var includedControls = sizes.ToDictionary(x => j++, _ => true);
+                j = 0;
                 while (partialSize > this.maxWidth - extraControlsOverhead
                         && includedControls.Count(x => x.Value) > 3)
                 {
-                    // We removed something, so the .. button is added, which has size 13.
-                    if (j == 1) extraControlsOverhead += 13;
+                    // We removed something, so the spacer is added, which has size 13.
+                    if (j == 0) extraControlsOverhead += 13;
 
                     // Remove another control and check the new partial size
                     var includedIndexes = includedControls.Where(x => x.Value).Select(x => x.Key).ToArray();
@@ -200,6 +197,15 @@ namespace DirectoryLabel
             this.ResumeLayout();
         }
 
+        /// <summary>
+        /// Adds a label at the specified position, with the specified text and tag.
+        /// </summary>
+        /// <param name="pos">The position to add the label on.</param>
+        /// <param name="text">The text to place on the label.</param>
+        /// <param name="index">The index to store in the tag of the label.</param>
+        /// <param name="preview">A value indicating whether this label is used as a size preview and only
+        /// its basic properties should be filled.</param>
+        /// <returns>The width of the created label.</returns>
         private int AddLabel(int pos, string text, int index, bool preview = false)
         {
             var label = new Label();

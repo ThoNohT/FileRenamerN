@@ -136,7 +136,15 @@ namespace FileRenamerN
                 generalSettings.Add("Directory", currentDir);
             else
                 currentDir = generalSettings["Directory"];
-            this.dirLabel.ChangeDirectory(currentDir);
+            try
+            {
+                this.dirLabel.ChangeDirectory(currentDir);
+            } catch (Exception ex)
+            {
+                MessageBox.Show(string.Format(
+                    "Failed to load initial directory: '{0}', reverting to application path.",
+                    ex.Message));
+            }
 
             txtFileFilter.Text =  ".*";
             if (!generalSettings.ContainsKey("FileFilter"))

@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Forms;
 using System.Windows.Forms.Design;
 using FileRenamerN.Common.Extensions;
@@ -112,11 +113,15 @@ namespace DirectoryLabel
         /// Sets the directory to the specified path and re-layouts the control.
         /// </summary>
         /// <param name="path">The path to change the directory to.</param>
-        public void ChangeDirectory(string path)
+        /// <param name="recursion">A value indicating whether this function was called recursively,
+        /// if so, don't try to call it again.</param>
+        public void ChangeDirectory(string path, bool recursion = false)
         {
             // Check whether the path points to a directory.
             if ((File.GetAttributes(path) & FileAttributes.Directory) == 0)
                 throw new ArgumentException("Specified path is not a directory.", "path");
+
+            var oldPath = this.CurrentPath;
 
             this.CurrentPath = path;
             this.pathParts = this.CurrentPath.Split(Path.DirectorySeparatorChar)
@@ -124,10 +129,19 @@ namespace DirectoryLabel
                 .Select(x => string.Format(@"{0}\", x))
                 .ToArray();
 
-            this.Relayout();
 
-            var handler = DirectoryChanged;
-            if (handler != null) handler(this, EventArgs.Empty);
+            try
+            {
+                this.Relayout();
+
+                var handler = DirectoryChanged;
+                if (handler != null) handler(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                if (!recursion) ChangeDirectory(oldPath, true);
+                throw;
+            }
         }
 
         /// <summary>
@@ -141,8 +155,15 @@ namespace DirectoryLabel
 
             // Start with a fresh set of controls.
             this.Controls.Clear();
-
-            var showSubdirectoryButton = new DirectoryInfo(this.CurrentPath).EnumerateDirectories().Any();
+            bool showSubdirectoryButton;
+            try
+            {
+                showSubdirectoryButton = new DirectoryInfo(this.CurrentPath).EnumerateDirectories().Any();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw new ArgumentException("Access to the specified path was denied.");
+            }
 
             // 19 is the subdirectories button size.
             var extraControlsOverhead = showSubdirectoryButton.Ord() * 19;
@@ -303,7 +324,14 @@ namespace DirectoryLabel
             else if (mouseButton == MouseButtons.Left)
             {
                 // Navigate to the folder.
-                this.ChangeDirectory(clickedFolder.FullName);
+                try
+                {
+                    this.ChangeDirectory(clickedFolder.FullName);
+                }
+                catch (ArgumentException ex)
+                {
+                    MessageBox.Show(string.Format("Error loading directory: {0}", ex.Message));
+                }
             }
         }
 
@@ -317,7 +345,7 @@ namespace DirectoryLabel
 
             // Show a context menu with all sibling folders.
             var contextMenu = new ContextMenu();
-            foreach (var folder in directoriesToList)
+            foreach (var folder in directoriesToList.OrderBy(x => x))
                 contextMenu.MenuItems.Add(folder, new EventHandler(this.ContextMenuClicked));
 
             var pos = this.PointToClient(Cursor.Position);
@@ -329,12 +357,18 @@ namespace DirectoryLabel
         /// </summary>
         private void ContextMenuClicked(object sender, EventArgs e)
         {
-            var text = ((MenuItem)sender).Text;
-            var clickedPath = string.Join(@"\", this.pathParts.Take(this.activePathIndex));
-            if (this.activePathIndex > 0)
-                this.ChangeDirectory(string.Format(@"{0}\{1}", clickedPath, text));
-            else
-                this.ChangeDirectory(text);
+            try
+            {
+                var text = ((MenuItem)sender).Text;
+                if (this.activePathIndex > 0)
+                    this.ChangeDirectory(string.Format(
+                        @"{0}\{1}", string.Join(@"\", this.pathParts.Take(this.activePathIndex)), text));
+                else
+                    this.ChangeDirectory(text);
+            } catch (ArgumentException ex)
+            {
+                MessageBox.Show(string.Format("Error loading directory: {0}", ex.Message));
+            }
         }
 
         #endregion Label event handlers

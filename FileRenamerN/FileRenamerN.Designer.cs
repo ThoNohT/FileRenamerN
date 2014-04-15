@@ -1,4 +1,26 @@
-﻿using DirectoryLabel;
+﻿/********************************************************************************
+ Copyright (C) 2014 Eric Bataille <e.c.p.bataille@gmail.com>
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+********************************************************************************/
+
+
+using System.IO;
+using System.Reflection;
+using DirectoryLabel;
+
 namespace FileRenamerN
 {
     partial class FileRenamerN
@@ -39,8 +61,9 @@ namespace FileRenamerN
             this.lblToolDescription = new System.Windows.Forms.Label();
             this.txtFileFilter = new System.Windows.Forms.TextBox();
             this.txtFilename = new System.Windows.Forms.TextBox();
-            // "." is the current directory, which should always exist, overwrite later to cause it to layout properly.
-            this.dirLabel = new DirectoryLabelStrip(".", 500);
+            this.dirLabel = new DirectoryLabelStrip(
+                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), 500);
+
             this.status.SuspendLayout();
             this.SuspendLayout();
             // 

@@ -123,6 +123,8 @@ namespace DirectoryLabel
 
             var oldPath = this.CurrentPath;
 
+            if (!path.EndsWith(@"\")) path = string.Format(@"{0}\", path);
+
             this.CurrentPath = path;
             this.pathParts = this.CurrentPath.Split(Path.DirectorySeparatorChar)
                 .Where(x => !string.IsNullOrWhiteSpace(x))

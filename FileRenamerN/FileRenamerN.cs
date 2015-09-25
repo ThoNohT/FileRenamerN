@@ -446,7 +446,7 @@ namespace FileRenamerN
             string message;
             if (!this.currentRenamer.Validate(path, parameters, out message))
             {
-                MessageBox.Show(message, "Unable to apply tool");
+                MessageBox.Show(string.Format("Renamer {0} parameter validation failed with message:\r\n\r\n{1}", this.currentRenamer.Name, message), "Unable to apply tool");
                 return;
             }
 
@@ -466,11 +466,33 @@ namespace FileRenamerN
                     extension = "";
                 }
 
-                var result = this.currentRenamer.Process(path, fileName, extension, parameters);
-                if (result != null)
+                try
                 {
-                    FileInfo fi = new FileInfo(string.Format("{0}{1}{2}", path, fileName, extension));
-                    fi.MoveTo(result);
+                    var result = this.currentRenamer.Process(path, fileName, extension, parameters);
+
+                    if (result != null)
+                    {
+                        FileInfo fi = new FileInfo(string.Format("{0}{1}{2}", path, fileName, extension));
+                        fi.MoveTo(result);
+                    }
+                }
+                catch (ProcessingException ex)
+                {
+                    var response = MessageBox.Show(
+                        string.Format(
+                            "Renamer {0} failed with message:\r\n\r\n{1},\r\n\r\n{2}.",
+                            this.currentRenamer.Name,
+                            ex.Message,
+                            "Press Ok to continue with the next file, press cancel to stop processing"),
+                        "Error while processing renamer.",
+                        MessageBoxButtons.OKCancel);
+                    if (response == DialogResult.OK)
+                    {
+                        progress.Value++;
+                        continue;
+                    }
+                    if (response == DialogResult.Cancel)
+                        break;
                 }
 
                 progress.Value++;

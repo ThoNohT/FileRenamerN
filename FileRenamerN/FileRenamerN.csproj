@@ -66,6 +66,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Renamers\Dto\ProcessingException.cs" />
     <Compile Include="Renamers\Tagger.cs" />
     <Compile Include="Renamers\SingleRenamer.cs" />
     <Compile Include="FileRenamerN.cs">

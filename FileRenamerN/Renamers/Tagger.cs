@@ -25,6 +25,8 @@ using FileRenamerN.Renamers.Dto;
 
 namespace FileRenamerN.Renamers
 {
+    using System.Linq;
+
     internal class Tagger : RenamerBase
     {
         public override string Name
@@ -133,6 +135,15 @@ namespace FileRenamerN.Renamers
 
             // Fill in the things and stuff
             var match = Regex.Match(fileName, regex);
+
+            if (!match.Success)
+                throw new ProcessingException(string.Format("The regular expression did not match on file: {0}", fileName));
+
+            var maxGroup =
+                new List<int> { artistGroup, yearGroup, albumGroup, trackGroup, titleGroup, commentsGroup }.Max();
+            if (maxGroup >= match.Groups.Count)
+                throw new ProcessingException(string.Format("The regular expression yielded {0} groups on {1}, but {2} are required.", match.Groups.Count, fileName, maxGroup));
+
             var artist = match.Groups[artistGroup].Value;
             var year = match.Groups[yearGroup].Value;
             var album = match.Groups[albumGroup].Value;
